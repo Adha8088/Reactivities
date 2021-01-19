@@ -1,4 +1,4 @@
-import { observable, action, makeObservable, computed, configure, runInAction } from "mobx";
+import { observable, action, makeObservable, computed, configure, runInAction, ObservableMap } from "mobx";
 import { createContext, SyntheticEvent } from "react";
 
 import { Activities } from "../api/agent";
@@ -8,11 +8,10 @@ configure({ enforceActions: 'always'});
 
 class ActivityStore {
 
-    @observable activityRegistery = new Map<string, IActivity>();    
-    @observable selectedActivity: IActivity | null = null;
+    @observable activityRegistery = new ObservableMap<string, IActivity>();
+    @observable activity: IActivity | null = null;
 
-    @observable target: string = "";
-    @observable editMode = false;
+    @observable target: string = "";    
     @observable submitting = false;
     @observable loadingInitial = false;    
 
@@ -42,9 +41,40 @@ class ActivityStore {
         }
         finally {
             runInAction(() => {
-            this.loadingInitial = false
+                this.loadingInitial = false
             })
         }       
+     }
+
+     @action clearActivity = () => {
+         this.activity = null;
+     }
+
+     @action loadActivity = async (id: string) => {
+         let activity = this.getActivity(id);
+         if (activity)
+            this.activity = activity;
+        else {
+            this.loadingInitial = true;            
+            try {
+                activity = await Activities.details(id);
+                runInAction(() => {
+                    this.activity = activity || null;                    
+                })
+            } 
+            catch (error) {
+                console.error(error)
+            }
+            finally {
+                runInAction(() => {
+                    this.loadingInitial = false
+                })
+            }
+        }
+     }
+
+     getActivity = (id: string) => {
+         return this.activityRegistery.get(id);
      }
 
      @action createActivity = async (activity: IActivity) => {
@@ -52,8 +82,7 @@ class ActivityStore {
          try {
             await Activities.create(activity);            
             runInAction(() => {
-                this.activityRegistery.set(activity.id, activity);            
-                this.editMode = false;
+                this.activityRegistery.set(activity.id, activity);
             })            
          } 
          catch (error) {
@@ -73,7 +102,6 @@ class ActivityStore {
            runInAction(() => {  
                this.activityRegistery.set(activity.id, activity);
                this.selectActivity = action;
-               this.editMode = false;
            })
         } 
         catch (error) {
@@ -105,29 +133,10 @@ class ActivityStore {
             })
          }
      }
-
-     @action openCreateForm = () => {
-         this.editMode = true;
-         this.selectedActivity = null;
-     }
-
-     @action openEditForm = (id: string) => {
-        this.editMode = true;
-        this.selectedActivity = this.activityRegistery.get(id) || null;
-    }    
-
+   
      @action selectActivity = (id: string) => {
-         this.selectedActivity = this.activityRegistery.get(id) || null; 
-         this.editMode = false;
+         this.activity = this.activityRegistery.get(id) || null; 
      }
-     
-     @action cancelSelectedActivity = () => {
-        this.selectedActivity = null;         
-     }
-
-     @action cancelFormOpen = () => {                
-        this.editMode = false;
-    }
 }
 
 export default createContext(new ActivityStore());
