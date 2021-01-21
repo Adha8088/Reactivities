@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using System.Threading;
 using MediatR;
+using FluentValidation;
 
 using Domain;
 using Persistence;
@@ -10,8 +11,8 @@ namespace Application.Activities
 {
     public class Create
     {
-        
-       public class Command : IRequest
+
+        public class Command : IRequest
         {
             public Guid Id { get; set; }
             public string Title { get; set; }
@@ -19,7 +20,20 @@ namespace Application.Activities
             public string Description { get; set; }
             public DateTime Date { get; set; }
             public string City { get; set; }
-            public string Venue { get; set; }       
+            public string Venue { get; set; }
+        }
+
+        public class CommandValidator : AbstractValidator<Command>
+        {
+            public CommandValidator()
+            {
+                RuleFor(X => X.Title).NotEmpty();
+                RuleFor(X => X.Description).NotEmpty();
+                RuleFor(X => X.Date).NotEmpty();
+                RuleFor(X => X.Venue).NotEmpty();
+                RuleFor(X => X.City).NotEmpty();
+                RuleFor(X => X.Category).NotEmpty();
+            }
         }
 
         public class Handler : IRequestHandler<Command>
@@ -33,7 +47,7 @@ namespace Application.Activities
 
             public async Task<Unit> Handle(Command request, CancellationToken cancellationToken)
             {
-                var a = new Activity 
+                var a = new Activity
                 {
                     Id = request.Id,
                     Description = request.Description,

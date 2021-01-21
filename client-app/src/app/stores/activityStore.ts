@@ -74,7 +74,7 @@ class ActivityStore {
                 })
             } 
             catch (error) {
-                console.error(error)
+                console.log(error);
             }
             finally {
                 runInAction(() => {

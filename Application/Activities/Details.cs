@@ -5,6 +5,8 @@ using MediatR;
 using Domain;
 using Persistence;
 using System;
+using Application.Errors;
+using System.Net;
 
 namespace Application.Activities
 {
@@ -12,7 +14,7 @@ namespace Application.Activities
     {
         public class Query : IRequest<Activity>
         {
-            public Guid Id { get; set; }           
+            public Guid Id { get; set; }
         }
 
         public class Handler : IRequestHandler<Query, Activity>
@@ -26,7 +28,12 @@ namespace Application.Activities
 
             public async Task<Activity> Handle(Query request, CancellationToken cancellationToken)
             {
-                return await context.Activities.FindAsync(request.Id);
+                var a = await context.Activities.FindAsync(request.Id);
+
+                if (a == null)
+                    throw new RestException(HttpStatusCode.NotFound, new { activity = "Not found" });
+
+                return a;
             }
         }
     }
